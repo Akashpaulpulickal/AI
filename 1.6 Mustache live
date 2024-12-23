@@ -1,0 +1,35 @@
+import cv2
+
+# Load the pre-trained Haar Cascade classifier for face and mustache detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+mustache_cascade = cv2.CascadeClassifier('haarcascade_mcs_mustache.xml')
+
+# Function to detect mustache
+def detect_mustache(frame):
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+    for (x, y, w, h) in faces:
+        roi_gray = gray[y:y+h, x:x+w]
+        roi_color = frame[y:y+h, x:x+w]
+        mustaches = mustache_cascade.detectMultiScale(roi_gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+        for (mx, my, mw, mh) in mustaches:
+            cv2.rectangle(roi_color, (mx, my), (mx+mw, my+mh), (255, 0, 0), 2)
+            cv2.putText(roi_color, 'Mustache', (mx, my-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+
+    return frame
+
+# Open the default camera
+cap = cv2.VideoCapture(0)
+
+while True:
+    ret, frame = cap.read()
+    frame = detect_mustache(frame)
+    cv2.imshow('Mustache Detection', frame)
+
+    if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+
+cap.release()
+cv2.destroyAllWindows()
