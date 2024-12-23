@@ -1,0 +1,39 @@
+
+import cv2
+
+# Load the pre-trained Haar Cascade classifier for face detection
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+# Function to detect hair in an image
+def detect_hair(image_path):
+    image = cv2.imread(image_path)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+    for (x, y, w, h) in faces:
+        # Define the region of interest for hair detection (upper part of the face)
+        roi_gray = gray[y:y + int(h / 2), x:x + w]
+        roi_color = image[y:y + int(h / 2), x:x + w]
+
+        # Apply a threshold to detect hair
+        _, thresh = cv2.threshold(roi_gray, 80, 255, cv2.THRESH_BINARY_INV)
+        contours, _ = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        for contour in contours:
+            if cv2.contourArea(contour) > 100:
+                x2, y2, w2, h2 = cv2.boundingRect(contour)
+                cv2.rectangle(roi_color, (x2, y2), (x2 + w2, y2 + h2), (255, 0, 0), 2)
+                cv2.putText(roi_color, 'Hair', (x2, y2 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+
+    return image
+
+# List of image paths
+image_paths = ['image1.jpg', 'image2.jpg', 'image3.jpg']
+
+# Detect hair in each image and display the results
+for image_path in image_paths:
+    result_image = detect_hair(image_path)
+    cv2.imshow('Hair Detection', result_image)
+    cv2.waitKey(0)
+
+cv2.destroyAllWindows()
