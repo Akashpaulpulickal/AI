@@ -1,0 +1,40 @@
+import cv2
+import numpy as np
+
+# Load the pre-trained face detector model
+face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+# Load the pre-trained age detection model
+age_net = cv2.dnn.readNetFromCaffe('deploy_age.prototxt', 'age_net.caffemodel')
+
+# Age categories
+age_list = ['(0-2)', '(4-6)', '(8-12)', '(15-20)', '(25-32)', '(38-43)', '(48-53)', '(60-100)']
+
+# Function to detect age in an image
+def detect_age(image_path):
+    image = cv2.imread(image_path)
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+
+    for (x, y, w, h) in faces:
+        face = image[y:y+h, x:x+w]
+        blob = cv2.dnn.blobFromImage(face, 1.0, (227, 227), (78.4263377603, 87.7689143744, 114.895847746), swapRB=False)
+        age_net.setInput(blob)
+        age_preds = age_net.forward()
+        age = age_list[age_preds[0].argmax()]
+        label = f'Age: {age}'
+        cv2.rectangle(image, (x, y), (x+w, y+h), (255, 0, 0), 2)
+        cv2.putText(image, label, (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+
+    return image
+
+# List of image paths
+image_paths = ['image1.jpg', 'image2.jpg', 'image3.jpg']
+
+# Detect age in each image and display the results
+for image_path in image_paths:
+    result_image = detect_age(image_path)
+    cv2.imshow('Age Detection', result_image)
+    cv2.waitKey(0)
+
+cv2.destroyAllWindows()
